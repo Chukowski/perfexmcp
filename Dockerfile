@@ -42,10 +42,16 @@ USER mcpuser
 
 # Environment variables will be set at runtime
 # PERFEX_API_URL and PERFEX_API_KEY should be provided when running the container
+ENV NODE_ENV=production
+ENV MCP_HTTP_MODE=true
+ENV PORT=3000
+
+# Expose the HTTP port
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "console.log('Health check: Server is ready')" || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Set the entrypoint
 ENTRYPOINT ["node", "build/index.js"]

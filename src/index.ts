@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -1273,9 +1274,60 @@ class PerfexCRMServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('Perfex CRM MCP server running on stdio');
+    // Check if running in HTTP mode (for Docker/web deployment)
+    const httpMode = process.env.MCP_HTTP_MODE === 'true' || process.env.NODE_ENV === 'production';
+    const port = process.env.PORT || process.env.MCP_PORT || 3000;
+    
+    if (httpMode) {
+      // HTTP mode for Docker/web deployment
+      const express = await import('express');
+      const app = express.default();
+      
+      // Health check endpoint
+      app.get('/health', (req, res) => {
+        res.json({ 
+          status: 'healthy', 
+          server: 'Perfex CRM MCP Server',
+          version: '0.3.0',
+          timestamp: new Date().toISOString()
+        });
+      });
+      
+      // MCP SSE endpoint
+      app.get('/sse', async (req, res) => {
+        const transport = new SSEServerTransport('/sse', res);
+        await this.server.connect(transport);
+        console.error(`Perfex CRM MCP server connected via SSE`);
+      });
+      
+      // Basic info endpoint
+      app.get('/', (req, res) => {
+        res.json({
+          name: 'Perfex CRM MCP Server',
+          version: '0.3.0',
+          description: 'Model Context Protocol server for Perfex CRM',
+          endpoints: {
+            health: '/health',
+            sse: '/sse'
+          },
+          environment: {
+            hasDefaultApi: !!(DEFAULT_API_URL && DEFAULT_API_KEY),
+            supportsDynamicCredentials: true
+          }
+        });
+      });
+      
+      app.listen(port, () => {
+        console.error(`Perfex CRM MCP server running on HTTP port ${port}`);
+        console.error(`Health check: http://localhost:${port}/health`);
+        console.error(`SSE endpoint: http://localhost:${port}/sse`);
+      });
+    } else {
+      // Stdio mode for local development
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      console.error('Perfex CRM MCP server running on stdio');
+    }
   }
 }
 

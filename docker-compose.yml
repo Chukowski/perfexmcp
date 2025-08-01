@@ -12,6 +12,11 @@ services:
       # or via a .env file for local development
       - PERFEX_API_URL=${PERFEX_API_URL}
       - PERFEX_API_KEY=${PERFEX_API_KEY}
+      - NODE_ENV=production
+      - MCP_HTTP_MODE=true
+      - PORT=3000
+    ports:
+      - "3000:3000"
     stdin_open: true
     tty: true
     networks:
