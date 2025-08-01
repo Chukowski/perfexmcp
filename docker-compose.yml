@@ -8,6 +8,8 @@ services:
     container_name: perfex-mcp-server
     restart: unless-stopped
     environment:
+      # These environment variables should be set in your deployment environment
+      # or via a .env file for local development
       - PERFEX_API_URL=${PERFEX_API_URL}
       - PERFEX_API_KEY=${PERFEX_API_KEY}
     stdin_open: true

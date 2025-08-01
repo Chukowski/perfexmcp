@@ -1,21 +1,34 @@
-# Use Node.js 20 as base image
-FROM node:20-alpine
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including dev dependencies for TypeScript)
+RUN npm ci
 
 # Copy source code
 COPY src/ ./src/
 COPY tsconfig.json ./
 
-# Build the application
+# Build TypeScript to JavaScript
 RUN npm run build
+
+# Stage 2: Create the runtime image
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --omit=dev
+
+# Copy built application from builder stage
+COPY --from=builder /app/build ./build
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S mcpuser && \
@@ -27,9 +40,8 @@ RUN chown -R mcpuser:mcpuser /app
 # Switch to non-root user
 USER mcpuser
 
-# Expose environment variables that need to be set
-ENV PERFEX_API_URL=""
-ENV PERFEX_API_KEY=""
+# Environment variables will be set at runtime
+# PERFEX_API_URL and PERFEX_API_KEY should be provided when running the container
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
