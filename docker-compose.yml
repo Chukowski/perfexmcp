@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  perfex-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perfex-mcp-server
+    restart: unless-stopped
+    environment:
+      - PERFEX_API_URL=${PERFEX_API_URL}
+      - PERFEX_API_KEY=${PERFEX_API_KEY}
+    stdin_open: true
+    tty: true
+    networks:
+      - mcp-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  mcp-network:
+    driver: bridge
