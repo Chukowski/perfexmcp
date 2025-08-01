@@ -10,29 +10,41 @@ import {
   McpError,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { z } from 'zod';
 
-// Environment variables
-const API_URL = process.env.PERFEX_API_URL;
-const API_KEY = process.env.PERFEX_API_KEY;
+// Environment variables (fallback defaults)
+const DEFAULT_API_URL = process.env.PERFEX_API_URL;
+const DEFAULT_API_KEY = process.env.PERFEX_API_KEY;
 
-// Validation
-if (!API_URL || !API_KEY) {
-  throw new Error('PERFEX_API_URL and PERFEX_API_KEY environment variables are required');
-}
+console.error(`[Perfex MCP] Default API_URL: ${DEFAULT_API_URL ? 'Loaded' : 'NOT SET'}`);
+console.error(`[Perfex MCP] Default API_KEY: ${DEFAULT_API_KEY ? 'Loaded (' + DEFAULT_API_KEY.substring(0, 5) + '...)' : 'NOT SET'}`);
+console.error(`[Perfex MCP] Server supports dynamic API credentials per request`);
 
-console.error(`[Perfex MCP] API_URL: ${API_URL ? 'Loaded' : 'MISSING'}`);
-console.error(`[Perfex MCP] API_KEY: ${API_KEY ? 'Loaded (' + API_KEY.substring(0, 5) + '...)' : 'MISSING'}`);
+// Create API client with dynamic credentials
+const createApiClient = (apiUrl?: string, apiKey?: string): AxiosInstance => {
+  const url = apiUrl || DEFAULT_API_URL;
+  const key = apiKey || DEFAULT_API_KEY;
+  
+  if (!url || !key) {
+    throw new McpError(
+      ErrorCode.InvalidParams, 
+      'API URL and API Key must be provided either as parameters or environment variables'
+    );
+  }
+  
+  return axios.create({
+    baseURL: url,
+    headers: {
+      'authtoken': key,
+      'Content-Type': 'application/json',
+    },
+    timeout: 30000,
+  });
+};
 
-// HTTP client configuration
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'authtoken': API_KEY,
-    'Content-Type': 'application/json',
-  },
-});
+// Default API client (backwards compatibility)
+const apiClient = DEFAULT_API_URL && DEFAULT_API_KEY ? createApiClient() : createApiClient('https://dummy.com/api', 'dummy-key');
 
 // Types
 interface PerfexResponse {
@@ -132,6 +144,14 @@ class PerfexCRMServer {
                 type: 'string',
                 description: 'Search term to find customers',
               },
+              api_url: {
+                type: 'string',
+                description: 'Perfex CRM API URL (e.g., https://yoursite.com/api). Optional if set in environment.',
+              },
+              api_key: {
+                type: 'string',
+                description: 'Perfex CRM API token. Optional if set in environment.',
+              },
             },
             required: ['keysearch'],
           },
@@ -141,7 +161,17 @@ class PerfexCRMServer {
           description: 'List all customers',
           inputSchema: {
             type: 'object',
-            properties: {},
+            properties: {
+              api_url: {
+                type: 'string',
+                description: 'Perfex CRM API URL (e.g., https://yoursite.com/api). Optional if set in environment.',
+              },
+              api_key: {
+                type: 'string',
+                description: 'Perfex CRM API token. Optional if set in environment.',
+              },
+            },
+            required: [],
           },
         },
         {
@@ -607,13 +637,17 @@ class PerfexCRMServer {
 
   // Customer handlers
   private async handleSearchCustomers(args: any) {
-    const validation = z.object({ keysearch: z.string() }).safeParse(args);
+    // Extract API credentials and create client
+    const dynamicApiClient = this.getApiClientFromArgs(args);
+    const toolArgs = this.extractToolArgs(args);
+    
+    const validation = z.object({ keysearch: z.string() }).safeParse(toolArgs);
     if (!validation.success) {
       throw new McpError(ErrorCode.InvalidParams, 'keysearch must be a string');
     }
 
     try {
-      const response = await apiClient.get(`/customers/search/${encodeURIComponent(validation.data.keysearch)}`);
+      const response = await dynamicApiClient.get(`/customers/search/${encodeURIComponent(validation.data.keysearch)}`);
       const customerData = response.data;
       
       if (!Array.isArray(customerData)) {
@@ -634,9 +668,12 @@ class PerfexCRMServer {
     }
   }
 
-  private async handleListCustomers() {
+  private async handleListCustomers(args: any = {}) {
+    // Extract API credentials and create client
+    const dynamicApiClient = this.getApiClientFromArgs(args);
+    
     try {
-      const response = await apiClient.get('/customers');
+      const response = await dynamicApiClient.get('/customers');
       const customers = response.data;
 
       if (!Array.isArray(customers)) {
@@ -1157,6 +1194,26 @@ class PerfexCRMServer {
       this.handleApiError(error, 'list taxes');
       throw error;
     }
+  }
+
+  // Helper method to extract API credentials and create client
+  private getApiClientFromArgs(args: any): AxiosInstance {
+    const { api_url, api_key, ...otherArgs } = args;
+    
+    try {
+      return createApiClient(api_url, api_key);
+    } catch (error) {
+      if (error instanceof McpError) {
+        throw error;
+      }
+      throw new McpError(ErrorCode.InvalidParams, `Failed to create API client: ${error}`);
+    }
+  }
+
+  // Helper method to extract non-credential arguments
+  private extractToolArgs(args: any): any {
+    const { api_url, api_key, ...toolArgs } = args;
+    return toolArgs;
   }
 
   // Helper methods

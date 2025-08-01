@@ -1,0 +1,15 @@
+{
+  "name": "list_customers_multi_client",
+  "description": "List all customers for a specific client account",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "client_id": {
+        "type": "string",
+        "description": "Client identifier (e.g., 'companya', 'companyb'). Defaults to 'default' if not specified.",
+        "enum": ["default", "companya", "companyb", "companyc"]
+      }
+    },
+    "required": []
+  }
+}

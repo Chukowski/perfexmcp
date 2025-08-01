@@ -1,6 +1,6 @@
 {
   "name": "perfex-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "a MCP server that connects to Perfex CRM ",
   "private": true,
   "type": "module",

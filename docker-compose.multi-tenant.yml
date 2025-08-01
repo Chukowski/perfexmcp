@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Client 1 - Company A
+  perfex-mcp-client1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perfex-mcp-client1
+    restart: unless-stopped
+    environment:
+      - PERFEX_API_URL=${CLIENT1_PERFEX_API_URL}
+      - PERFEX_API_KEY=${CLIENT1_PERFEX_API_KEY}
+    ports:
+      - "3001:3000"  # Expose on different ports
+    networks:
+      - mcp-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Client 2 - Company B  
+  perfex-mcp-client2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perfex-mcp-client2
+    restart: unless-stopped
+    environment:
+      - PERFEX_API_URL=${CLIENT2_PERFEX_API_URL}
+      - PERFEX_API_KEY=${CLIENT2_PERFEX_API_KEY}
+    ports:
+      - "3002:3000"  # Different port
+    networks:
+      - mcp-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Client 3 - Company C
+  perfex-mcp-client3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perfex-mcp-client3
+    restart: unless-stopped
+    environment:
+      - PERFEX_API_URL=${CLIENT3_PERFEX_API_URL}
+      - PERFEX_API_KEY=${CLIENT3_PERFEX_API_KEY}
+    ports:
+      - "3003:3000"  # Different port
+    networks:
+      - mcp-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  mcp-network:
+    driver: bridge

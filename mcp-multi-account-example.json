@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "perfex-mcp-smartech": {
+      "command": "C:\\Users\\jesus\\AppData\\Roaming\\Roo-Code\\MCP\\perfex-crm-server\\build\\index.js",
+      "env": {
+        "PERFEX_API_URL": "https://crm.smartech.pr/api",
+        "PERFEX_API_KEY": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4iLCJuYW1lIjoiIiwiQVBJX1RJTUUiOjE3MzQ5NzcyMTR9.6A5tMAG9vkfheUdSQAaR3kQGb8ftVIv42AGQ-0iGJ3o"
+      }
+    },
+    "perfex-mcp-client2": {
+      "command": "C:\\Users\\jesus\\AppData\\Roaming\\Roo-Code\\MCP\\perfex-crm-server\\build\\index.js",
+      "env": {
+        "PERFEX_API_URL": "https://client2.perfex.com/api",
+        "PERFEX_API_KEY": "your-client2-api-token-here"
+      }
+    },
+    "perfex-mcp-client3": {
+      "command": "C:\\Users\\jesus\\AppData\\Roaming\\Roo-Code\\MCP\\perfex-crm-server\\build\\index.js",
+      "env": {
+        "PERFEX_API_URL": "https://client3.perfex.com/api",
+        "PERFEX_API_KEY": "your-client3-api-token-here"
+      }
+    }
+  }
+}

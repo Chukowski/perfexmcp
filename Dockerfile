@@ -53,6 +53,6 @@ ENTRYPOINT ["node", "build/index.js"]
 # Add labels for metadata
 LABEL org.opencontainers.image.title="Perfex CRM MCP Server"
 LABEL org.opencontainers.image.description="Model Context Protocol server for Perfex CRM"
-LABEL org.opencontainers.image.version="0.2.0"
+LABEL org.opencontainers.image.version="0.2.1"
 LABEL org.opencontainers.image.vendor="MCP Community"
 LABEL org.opencontainers.image.licenses="MIT"
