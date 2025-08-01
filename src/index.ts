@@ -504,675 +504,18 @@ class PerfexCRMServer {
             required: ['id'],
           },
         },
-        // Estimate tools
-        {
-          name: 'list_estimates',
-          description: 'List all estimates',
-          inputSchema: {
-            type: 'object',
-            properties: {},
-          },
-        },
-        {
-          name: 'create_estimate',
-          description: 'Create a new estimate',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              clientid: {
-                type: 'integer',
-                description: 'Customer ID (required)',
-              },
-              number: {
-                type: 'integer',
-                description: 'Estimate number (required)',
-              },
-              date: {
-                type: 'string',
-                description: 'Estimate date (YYYY-MM-DD) (required)',
-              },
-              currency: {
-                type: 'integer',
-                description: 'Currency ID (required)',
-              },
-              subtotal: {
-                type: 'number',
-                description: 'Calculated subtotal (required)',
-              },
-              total: {
-                type: 'number',
-                description: 'Calculated total (required)',
-              },
-              duedate: {
-                type: 'string',
-                description: 'Due date (YYYY-MM-DD)',
-              },
-            },
-            required: ['clientid', 'number', 'date', 'currency', 'subtotal', 'total'],
-          },
-        },
-        {
-          name: 'get_estimate_by_id',
-          description: 'Get detailed information about a specific estimate',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Estimate unique ID',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'update_estimate',
-          description: 'Update an existing estimate',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Estimate unique ID (required)',
-              },
-              clientid: {
-                type: 'integer',
-                description: 'Customer ID',
-              },
-              number: {
-                type: 'integer',
-                description: 'Estimate number',
-              },
-              date: {
-                type: 'string',
-                description: 'Estimate date (YYYY-MM-DD)',
-              },
-              currency: {
-                type: 'integer',
-                description: 'Currency ID',
-              },
-              subtotal: {
-                type: 'number',
-                description: 'Calculated subtotal',
-              },
-              total: {
-                type: 'number',
-                description: 'Calculated total',
-              },
-              status: {
-                type: 'integer',
-                description: 'Estimate status ID',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'search_estimates',
-          description: 'Search for estimates by keyword',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              keysearch: {
-                type: 'string',
-                description: 'Search term to find estimates',
-              },
-            },
-            required: ['keysearch'],
-          },
-        },
-        {
-          name: 'delete_estimate',
-          description: 'Delete an estimate permanently',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Estimate unique ID to delete',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        // Calendar tools
-        {
-          name: 'list_calendar_events',
-          description: 'List all calendar events',
-          inputSchema: {
-            type: 'object',
-            properties: {},
-          },
-        },
-        {
-          name: 'create_calendar_event',
-          description: 'Create a new calendar event',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              title: {
-                type: 'string',
-                description: 'Event title (required)',
-              },
-              start: {
-                type: 'string',
-                description: 'Start date/time (YYYY-MM-DD HH:MM:SS) (required)',
-              },
-              end: {
-                type: 'string',
-                description: 'End date/time (YYYY-MM-DD HH:MM:SS)',
-              },
-              description: {
-                type: 'string',
-                description: 'Event description',
-              },
-              userid: {
-                type: 'integer',
-                description: 'User ID (required)',
-              },
-              reminder_before: {
-                type: 'integer',
-                description: 'Reminder before value (required)',
-              },
-              reminder_before_type: {
-                type: 'string',
-                description: 'Reminder type: minutes, hours, days (required)',
-              },
-              public: {
-                type: 'integer',
-                description: 'Public event: 1 or 0 (required)',
-              },
-              color: {
-                type: 'string',
-                description: 'Event color (hex code)',
-              },
-            },
-            required: ['title', 'start', 'userid', 'reminder_before', 'reminder_before_type', 'public'],
-          },
-        },
-        {
-          name: 'get_calendar_event_by_id',
-          description: 'Get detailed information about a specific calendar event',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Calendar event unique ID',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'update_calendar_event',
-          description: 'Update an existing calendar event',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Calendar event unique ID (required)',
-              },
-              title: {
-                type: 'string',
-                description: 'Event title',
-              },
-              start: {
-                type: 'string',
-                description: 'Start date/time (YYYY-MM-DD HH:MM:SS)',
-              },
-              end: {
-                type: 'string',
-                description: 'End date/time (YYYY-MM-DD HH:MM:SS)',
-              },
-              description: {
-                type: 'string',
-                description: 'Event description',
-              },
-              userid: {
-                type: 'integer',
-                description: 'User ID',
-              },
-              reminder_before: {
-                type: 'integer',
-                description: 'Reminder before value',
-              },
-              reminder_before_type: {
-                type: 'string',
-                description: 'Reminder type: minutes, hours, days',
-              },
-              public: {
-                type: 'integer',
-                description: 'Public event: 1 or 0',
-              },
-              color: {
-                type: 'string',
-                description: 'Event color (hex code)',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'delete_calendar_event',
-          description: 'Delete a calendar event permanently',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Calendar event unique ID to delete',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        // Contact tools
-        {
-          name: 'create_contact',
-          description: 'Create a new contact',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              customer_id: {
-                type: 'integer',
-                description: 'Customer ID (required)',
-              },
-              firstname: {
-                type: 'string',
-                description: 'First name (required)',
-              },
-              lastname: {
-                type: 'string',
-                description: 'Last name (required)',
-              },
-              email: {
-                type: 'string',
-                description: 'Email address (required)',
-              },
-              phonenumber: {
-                type: 'string',
-                description: 'Phone number',
-              },
-              title: {
-                type: 'string',
-                description: 'Job title',
-              },
-              is_primary: {
-                type: 'integer',
-                description: 'Primary contact: 1 or 0',
-              },
-            },
-            required: ['customer_id', 'firstname', 'lastname', 'email'],
-          },
-        },
-        {
-          name: 'get_customer_contacts',
-          description: 'Get all contacts for a customer or a specific contact',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              customer_id: {
-                type: 'integer',
-                description: 'Customer ID (required)',
-              },
-              contact_id: {
-                type: 'integer',
-                description: 'Specific contact ID (optional)',
-              },
-            },
-            required: ['customer_id'],
-          },
-        },
-        {
-          name: 'update_contact',
-          description: 'Update an existing contact',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Contact unique ID (required)',
-              },
-              firstname: {
-                type: 'string',
-                description: 'First name',
-              },
-              lastname: {
-                type: 'string',
-                description: 'Last name',
-              },
-              email: {
-                type: 'string',
-                description: 'Email address',
-              },
-              phonenumber: {
-                type: 'string',
-                description: 'Phone number',
-              },
-              title: {
-                type: 'string',
-                description: 'Job title',
-              },
-              is_primary: {
-                type: 'integer',
-                description: 'Primary contact: 1 or 0',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'search_contacts',
-          description: 'Search for contacts by keyword',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              keysearch: {
-                type: 'string',
-                description: 'Search term to find contacts',
-              },
-            },
-            required: ['keysearch'],
-          },
-        },
-        {
-          name: 'delete_contact',
-          description: 'Delete a contact permanently',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Contact unique ID to delete',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        // Project tools
-        {
-          name: 'create_project',
-          description: 'Create a new project',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              name: {
-                type: 'string',
-                description: 'Project name (required)',
-              },
-              rel_type: {
-                type: 'string',
-                description: 'Related type: lead, customer, internal (required)',
-              },
-              clientid: {
-                type: 'integer',
-                description: 'Related ID (Lead or Customer ID, 0 for internal) (required)',
-              },
-              billing_type: {
-                type: 'integer',
-                description: 'Billing type ID (required)',
-              },
-              start_date: {
-                type: 'string',
-                description: 'Start date (YYYY-MM-DD) (required)',
-              },
-              status: {
-                type: 'integer',
-                description: 'Project status ID (required)',
-              },
-              deadline: {
-                type: 'string',
-                description: 'Deadline (YYYY-MM-DD)',
-              },
-              description: {
-                type: 'string',
-                description: 'Project description',
-              },
-              project_cost: {
-                type: 'number',
-                description: 'Project cost',
-              },
-              estimated_hours: {
-                type: 'number',
-                description: 'Estimated hours',
-              },
-            },
-            required: ['name', 'rel_type', 'clientid', 'billing_type', 'start_date', 'status'],
-          },
-        },
-        {
-          name: 'get_project_by_id',
-          description: 'Get detailed information about a specific project',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Project unique ID',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'update_project',
-          description: 'Update an existing project',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Project unique ID (required)',
-              },
-              name: {
-                type: 'string',
-                description: 'Project name',
-              },
-              rel_type: {
-                type: 'string',
-                description: 'Related type: lead, customer, internal',
-              },
-              clientid: {
-                type: 'integer',
-                description: 'Related ID (Lead or Customer ID)',
-              },
-              billing_type: {
-                type: 'integer',
-                description: 'Billing type ID',
-              },
-              start_date: {
-                type: 'string',
-                description: 'Start date (YYYY-MM-DD)',
-              },
-              status: {
-                type: 'integer',
-                description: 'Project status ID',
-              },
-              deadline: {
-                type: 'string',
-                description: 'Deadline (YYYY-MM-DD)',
-              },
-              description: {
-                type: 'string',
-                description: 'Project description',
-              },
-              project_cost: {
-                type: 'number',
-                description: 'Project cost',
-              },
-              estimated_hours: {
-                type: 'number',
-                description: 'Estimated hours',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'search_projects',
-          description: 'Search for projects by keyword',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              keysearch: {
-                type: 'string',
-                description: 'Search term to find projects',
-              },
-            },
-            required: ['keysearch'],
-          },
-        },
-        {
-          name: 'delete_project',
-          description: 'Delete a project permanently',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Project unique ID to delete',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        // Expense tools
-        {
-          name: 'create_expense',
-          description: 'Create a new expense',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              category: {
-                type: 'integer',
-                description: 'Expense category ID (required)',
-              },
-              amount: {
-                type: 'number',
-                description: 'Expense amount (required)',
-              },
-              date: {
-                type: 'string',
-                description: 'Expense date (YYYY-MM-DD) (required)',
-              },
-              currency: {
-                type: 'integer',
-                description: 'Currency ID (required)',
-              },
-              note: {
-                type: 'string',
-                description: 'Expense note/description',
-              },
-              paymentmode: {
-                type: 'integer',
-                description: 'Payment mode ID',
-              },
-              reference_no: {
-                type: 'string',
-                description: 'Reference number',
-              },
-            },
-            required: ['category', 'amount', 'date', 'currency'],
-          },
-        },
-        {
-          name: 'get_expense_by_id',
-          description: 'Get detailed information about a specific expense',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Expense unique ID',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'update_expense',
-          description: 'Update an existing expense',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Expense unique ID (required)',
-              },
-              category: {
-                type: 'integer',
-                description: 'Expense category ID',
-              },
-              amount: {
-                type: 'number',
-                description: 'Expense amount',
-              },
-              date: {
-                type: 'string',
-                description: 'Expense date (YYYY-MM-DD)',
-              },
-              currency: {
-                type: 'integer',
-                description: 'Currency ID',
-              },
-              note: {
-                type: 'string',
-                description: 'Expense note/description',
-              },
-              paymentmode: {
-                type: 'integer',
-                description: 'Payment mode ID',
-              },
-              reference_no: {
-                type: 'string',
-                description: 'Reference number',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        {
-          name: 'search_expenses',
-          description: 'Search for expenses by keyword',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              keysearch: {
-                type: 'string',
-                description: 'Search term to find expenses',
-              },
-            },
-            required: ['keysearch'],
-          },
-        },
-        {
-          name: 'delete_expense',
-          description: 'Delete an expense permanently',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                description: 'Expense unique ID to delete',
-              },
-            },
-            required: ['id'],
-          },
-        },
-        // Common data tools
-        {
-          name: 'list_expense_categories',
-          description: 'List all expense categories',
-          inputSchema: {
-            type: 'object',
-            properties: {},
-          },
-        },
+        // Common data tools (implemented)
         {
           name: 'list_payment_modes',
           description: 'List all payment modes',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        {
+          name: 'list_expense_categories',
+          description: 'List all expense categories',
           inputSchema: {
             type: 'object',
             properties: {},
@@ -1244,73 +587,11 @@ class PerfexCRMServer {
           case 'delete_proposal':
             return await this.handleDeleteProposal(args);
           
-          // Estimate handlers
-          case 'list_estimates':
-            return await this.handleListEstimates();
-          case 'create_estimate':
-            return await this.handleCreateEstimate(args);
-          case 'get_estimate_by_id':
-            return await this.handleGetEstimateById(args);
-          case 'update_estimate':
-            return await this.handleUpdateEstimate(args);
-          case 'search_estimates':
-            return await this.handleSearchEstimates(args);
-          case 'delete_estimate':
-            return await this.handleDeleteEstimate(args);
-          
-          // Calendar handlers
-          case 'list_calendar_events':
-            return await this.handleListCalendarEvents();
-          case 'create_calendar_event':
-            return await this.handleCreateCalendarEvent(args);
-          case 'get_calendar_event_by_id':
-            return await this.handleGetCalendarEventById(args);
-          case 'update_calendar_event':
-            return await this.handleUpdateCalendarEvent(args);
-          case 'delete_calendar_event':
-            return await this.handleDeleteCalendarEvent(args);
-          
-          // Contact handlers
-          case 'create_contact':
-            return await this.handleCreateContact(args);
-          case 'get_customer_contacts':
-            return await this.handleGetCustomerContacts(args);
-          case 'update_contact':
-            return await this.handleUpdateContact(args);
-          case 'search_contacts':
-            return await this.handleSearchContacts(args);
-          case 'delete_contact':
-            return await this.handleDeleteContact(args);
-          
-          // Project handlers
-          case 'create_project':
-            return await this.handleCreateProject(args);
-          case 'get_project_by_id':
-            return await this.handleGetProjectById(args);
-          case 'update_project':
-            return await this.handleUpdateProject(args);
-          case 'search_projects':
-            return await this.handleSearchProjects(args);
-          case 'delete_project':
-            return await this.handleDeleteProject(args);
-          
-          // Expense handlers
-          case 'create_expense':
-            return await this.handleCreateExpense(args);
-          case 'get_expense_by_id':
-            return await this.handleGetExpenseById(args);
-          case 'update_expense':
-            return await this.handleUpdateExpense(args);
-          case 'search_expenses':
-            return await this.handleSearchExpenses(args);
-          case 'delete_expense':
-            return await this.handleDeleteExpense(args);
-          
           // Common data handlers
-          case 'list_expense_categories':
-            return await this.handleListExpenseCategories();
           case 'list_payment_modes':
             return await this.handleListPaymentModes();
+          case 'list_expense_categories':
+            return await this.handleListExpenseCategories();
           case 'list_taxes':
             return await this.handleListTaxes();
           
@@ -1804,6 +1085,76 @@ class PerfexCRMServer {
       return this.handleGenericApiResponse(response.data, 'delete proposal');
     } catch (error) {
       this.handleApiError(error, `delete proposal ${validation.data.id}`);
+      throw error;
+    }
+  }
+
+  // Common data handlers
+  private async handleListPaymentModes() {
+    try {
+      const response = await apiClient.get('/common/payment_mode');
+      const paymentModes = response.data;
+
+      if (!Array.isArray(paymentModes)) {
+        throw new McpError(ErrorCode.InternalError, 'Invalid API response format for listPaymentModes. Expected array.');
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(paymentModes, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      this.handleApiError(error, 'list payment modes');
+      throw error;
+    }
+  }
+
+  private async handleListExpenseCategories() {
+    try {
+      const response = await apiClient.get('/common/expense_category');
+      const expenseCategories = response.data;
+
+      if (!Array.isArray(expenseCategories)) {
+        throw new McpError(ErrorCode.InternalError, 'Invalid API response format for listExpenseCategories. Expected array.');
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(expenseCategories, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      this.handleApiError(error, 'list expense categories');
+      throw error;
+    }
+  }
+
+  private async handleListTaxes() {
+    try {
+      const response = await apiClient.get('/common/tax_data');
+      const taxes = response.data;
+
+      if (!Array.isArray(taxes)) {
+        throw new McpError(ErrorCode.InternalError, 'Invalid API response format for listTaxes. Expected array.');
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(taxes, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      this.handleApiError(error, 'list taxes');
       throw error;
     }
   }

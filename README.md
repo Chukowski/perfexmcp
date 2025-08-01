@@ -31,6 +31,23 @@ This MCP server provides AI assistants with the ability to:
 #### Lead Management
 - **list_leads** - List all leads
 - **create_lead** - Create new leads
+- **get_lead_by_id** - Get detailed lead information
+- **update_lead** - Update existing leads
+- **search_leads** - Search leads by keyword
+- **delete_lead** - Delete leads permanently
+
+#### Proposal Management
+- **list_proposals** - List all proposals
+- **create_proposal** - Create new proposals
+- **get_proposal_by_id** - Get detailed proposal information
+- **update_proposal** - Update existing proposals
+- **search_proposals** - Search proposals by keyword
+- **delete_proposal** - Delete proposals permanently
+
+#### Common Data Access
+- **list_payment_modes** - List all available payment modes
+- **list_expense_categories** - List all expense categories
+- **list_taxes** - List all tax configurations
 
 ### Resources
 - **Customer Search** - Direct access to customer search results via `perfex://customers/search/{keysearch}` URIs
