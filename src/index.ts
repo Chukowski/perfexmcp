@@ -1197,6 +1197,127 @@ class PerfexCRMServer {
     }
   }
 
+  // Setup handlers for SSE server instance
+  private setupSSEHandlers(server: Server) {
+    // List available tools
+    server.setRequestHandler(ListToolsRequestSchema, async () => ({
+      tools: [
+        // Customer tools
+        {
+          name: 'search_customers',
+          description: 'Search for customers in Perfex CRM',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              keysearch: {
+                type: 'string',
+                description: 'Search term to find customers',
+              },
+              api_url: {
+                type: 'string',
+                description: 'Perfex CRM API URL (e.g., https://yoursite.com/api). Optional if set in environment.',
+              },
+              api_key: {
+                type: 'string',
+                description: 'Perfex CRM API token. Optional if set in environment.',
+              },
+            },
+            required: ['keysearch'],
+          },
+        },
+        {
+          name: 'list_customers',
+          description: 'List all customers',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              api_url: {
+                type: 'string',
+                description: 'Perfex CRM API URL (e.g., https://yoursite.com/api). Optional if set in environment.',
+              },
+              api_key: {
+                type: 'string',
+                description: 'Perfex CRM API token. Optional if set in environment.',
+              },
+            },
+            required: [],
+          },
+        },
+        // Add more tools from the main server
+        ...this.getMainServerTools()
+      ],
+    }));
+
+    // Tool execution handler
+    server.setRequestHandler(CallToolRequestSchema, async (req) => {
+      try {
+        const toolName = req.params.name;
+        const args = req.params.arguments || {};
+
+        // Route to appropriate handler
+        switch (toolName) {
+          case 'search_customers':
+            return await this.handleSearchCustomers(args);
+          case 'list_customers':
+            return await this.handleListCustomers(args);
+          // Add more tool handlers as needed
+          default:
+            throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
+        }
+      } catch (error: any) {
+        this.handleApiError(error, `execute tool ${req.params.name}`);
+        throw error;
+      }
+    });
+  }
+
+  // Get tools from main server
+  private getMainServerTools() {
+    // Return a subset of the most important tools for SSE
+    return [
+      {
+        name: 'get_customer_by_id',
+        description: 'Get detailed information about a specific customer',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Customer unique ID',
+            },
+            api_url: {
+              type: 'string',
+              description: 'Perfex CRM API URL (optional)',
+            },
+            api_key: {
+              type: 'string',
+              description: 'Perfex CRM API token (optional)',
+            },
+          },
+          required: ['id'],
+        },
+      },
+      {
+        name: 'list_leads',
+        description: 'List all leads',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            api_url: {
+              type: 'string',
+              description: 'Perfex CRM API URL (optional)',
+            },
+            api_key: {
+              type: 'string',
+              description: 'Perfex CRM API token (optional)',
+            },
+          },
+          required: [],
+        },
+      }
+    ];
+  }
+
   // Helper method to extract API credentials and create client
   private getApiClientFromArgs(args: any): AxiosInstance {
     const { api_url, api_key, ...otherArgs } = args;
@@ -1340,17 +1461,37 @@ class PerfexCRMServer {
       // MCP SSE endpoint (original)
       app.get('/sse', async (req, res) => {
         try {
+          console.error('SSE connection attempt from:', req.ip);
+          
           // Set SSE headers
           res.writeHead(200, {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Cache-Control'
+            'Access-Control-Allow-Headers': 'Cache-Control, Content-Type',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
           });
 
+          // Create a new server instance for this SSE connection
+          const sseServer = new Server(
+            {
+              name: 'perfex-crm-mcp',
+              version: '0.3.0',
+            },
+            {
+              capabilities: {
+                tools: {},
+                resources: {},
+              },
+            }
+          );
+
+          // Set up handlers for this SSE server instance
+          this.setupSSEHandlers(sseServer);
+
           const transport = new SSEServerTransport('/sse', res);
-          await this.server.connect(transport);
+          await sseServer.connect(transport);
           console.error(`Perfex CRM MCP server connected via SSE`);
         } catch (error) {
           console.error('SSE connection error:', error);
