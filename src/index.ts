@@ -1463,16 +1463,11 @@ class PerfexCRMServer {
         try {
           console.error('SSE connection attempt from:', req.ip);
           
-          // Set SSE headers
-          res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Cache-Control, Content-Type',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-          });
-
+          // Set CORS headers before SSE transport starts
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type');
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+          
           // Create a new server instance for this SSE connection
           const sseServer = new Server(
             {
@@ -1490,9 +1485,10 @@ class PerfexCRMServer {
           // Set up handlers for this SSE server instance
           this.setupSSEHandlers(sseServer);
 
+          // Let SSEServerTransport handle the rest
           const transport = new SSEServerTransport('/sse', res);
           await sseServer.connect(transport);
-          console.error(`Perfex CRM MCP server connected via SSE`);
+          console.error(`Perfex CRM MCP server connected via SSE from ${req.ip}`);
         } catch (error) {
           console.error('SSE connection error:', error);
           if (!res.headersSent) {
