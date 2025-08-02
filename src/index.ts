@@ -1293,11 +1293,71 @@ class PerfexCRMServer {
         });
       });
       
-      // MCP SSE endpoint
+      // CORS middleware
+      app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        if (req.method === 'OPTIONS') {
+          res.sendStatus(200);
+        } else {
+          next();
+        }
+      });
+
+      // Simple tools list endpoint
+      app.get('/tools', (req, res) => {
+        res.json({
+          tools: [
+            {
+              name: 'search_customers',
+              description: 'Search for customers in Perfex CRM',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  keysearch: { type: 'string', description: 'Search term' },
+                  api_url: { type: 'string', description: 'Perfex API URL (optional)' },
+                  api_key: { type: 'string', description: 'Perfex API key (optional)' }
+                },
+                required: ['keysearch']
+              }
+            },
+            {
+              name: 'list_customers',
+              description: 'List all customers',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  api_url: { type: 'string', description: 'Perfex API URL (optional)' },
+                  api_key: { type: 'string', description: 'Perfex API key (optional)' }
+                }
+              }
+            }
+          ]
+        });
+      });
+
+      // MCP SSE endpoint (original)
       app.get('/sse', async (req, res) => {
-        const transport = new SSEServerTransport('/sse', res);
-        await this.server.connect(transport);
-        console.error(`Perfex CRM MCP server connected via SSE`);
+        try {
+          // Set SSE headers
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Cache-Control'
+          });
+
+          const transport = new SSEServerTransport('/sse', res);
+          await this.server.connect(transport);
+          console.error(`Perfex CRM MCP server connected via SSE`);
+        } catch (error) {
+          console.error('SSE connection error:', error);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'SSE connection failed' });
+          }
+        }
       });
       
       // Basic info endpoint
