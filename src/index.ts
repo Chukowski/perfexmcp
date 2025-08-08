@@ -2,6 +2,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -10,7 +11,11 @@ import {
   ListToolsRequestSchema,
   McpError,
   ReadResourceRequestSchema,
+  InitializeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { randomUUID } from 'crypto';
+// Type-only imports for Express request/response
+import type { Request, Response } from 'express';
 import axios, { AxiosInstance } from 'axios';
 import { z } from 'zod';
 
@@ -62,6 +67,8 @@ interface PerfexStatusResponse {
 
 class PerfexCRMServer {
   private server: Server;
+  // Keep active Streamable HTTP transports by session id
+  private transports: Record<string, StreamableHTTPServerTransport> = {};
 
   constructor() {
     this.server = new Server(
@@ -1271,6 +1278,70 @@ class PerfexCRMServer {
     });
   }
 
+  // --- Streamable HTTP helpers ---
+  private isInitializeRequest(body: any): boolean {
+    const isInitial = (data: any) => InitializeRequestSchema.safeParse(data).success;
+    if (Array.isArray(body)) return body.some((r) => isInitial(r));
+    return isInitial(body);
+  }
+
+  private async handleMCPPost(req: Request, res: Response) {
+    const SESSION_ID_HEADER_NAME = 'mcp-session-id';
+    const sessionId = (req.headers[SESSION_ID_HEADER_NAME] as string | undefined) ?? undefined;
+
+    try {
+      // Reuse existing transport for this session
+      if (sessionId && this.transports[sessionId]) {
+        const transport = this.transports[sessionId];
+        await transport.handleRequest(req, res, (req as any).body);
+        return;
+      }
+
+      // Create new transport on initialize
+      if (!sessionId && this.isInitializeRequest((req as any).body)) {
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() });
+        await this.server.connect(transport);
+        await transport.handleRequest(req, res, (req as any).body);
+
+        const newSessionId = transport.sessionId;
+        if (newSessionId) {
+          this.transports[newSessionId] = transport;
+        }
+        return;
+      }
+
+      // Invalid usage
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Bad Request: invalid session ID or method.' },
+        id: randomUUID(),
+      });
+    } catch (error) {
+      console.error('Error handling MCP POST:', error);
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: { code: -32001, message: 'Internal server error.' },
+        id: randomUUID(),
+      });
+    }
+  }
+
+  private async handleMCPGet(req: Request, res: Response) {
+    const SESSION_ID_HEADER_NAME = 'mcp-session-id';
+    const sessionId = (req.headers[SESSION_ID_HEADER_NAME] as string | undefined) ?? undefined;
+    if (!sessionId || !this.transports[sessionId]) {
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Bad Request: invalid session ID or method.' },
+        id: randomUUID(),
+      });
+      return;
+    }
+
+    const transport = this.transports[sessionId];
+    await transport.handleRequest(req, res);
+  }
+
   // Get tools from main server
   private getMainServerTools() {
     // Return a subset of the most important tools for SSE
@@ -1403,6 +1474,7 @@ class PerfexCRMServer {
       // HTTP mode for Docker/web deployment
       const express = await import('express');
       const app = express.default();
+      app.use(express.default.json());
       
       // Health check endpoint
       app.get('/health', (req, res) => {
@@ -1458,7 +1530,7 @@ class PerfexCRMServer {
         });
       });
 
-      // MCP SSE endpoint (original)
+      // MCP SSE endpoint (legacy alternative to Streamable HTTP)
       app.get('/sse', async (req, res) => {
         try {
           console.error('SSE connection attempt from:', req.ip);
@@ -1497,6 +1569,23 @@ class PerfexCRMServer {
         }
       });
       
+      // MCP Streamable HTTP endpoint (spec-compliant)
+      const MCP_ENDPOINT = '/mcp';
+      app.post(MCP_ENDPOINT, async (req: any, res: any) => {
+        // CORS for POST
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type, mcp-session-id');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        await this.handleMCPPost(req, res);
+      });
+      app.get(MCP_ENDPOINT, async (req: any, res: any) => {
+        // CORS for GET/SSE
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type, mcp-session-id');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        await this.handleMCPGet(req, res);
+      });
+      
       // Basic info endpoint
       app.get('/', (req, res) => {
         res.json({
@@ -1506,6 +1595,10 @@ class PerfexCRMServer {
           endpoints: {
             health: '/health',
             sse: '/sse'
+          },
+          streamableHttp: {
+            endpoint: '/mcp',
+            sessionIdHeader: 'mcp-session-id'
           },
           environment: {
             hasDefaultApi: !!(DEFAULT_API_URL && DEFAULT_API_KEY),
