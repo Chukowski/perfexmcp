@@ -17,6 +17,7 @@ import { randomUUID } from 'crypto';
 // Type-only imports for Express request/response
 import type { Request, Response } from 'express';
 import axios, { AxiosInstance } from 'axios';
+import FormData from 'form-data';
 import { z } from 'zod';
 
 // Environment variables (fallback defaults)
@@ -265,6 +266,55 @@ class PerfexCRMServer {
             required: ['id'],
           },
         },
+        {
+          name: 'create_invoice',
+          description: 'Create a new invoice (multipart/form-data)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              payload: { type: 'object', description: 'Invoice fields, e.g., customerid, date, currency, newitems[0][description], etc.' },
+              api_url: { type: 'string' },
+              api_key: { type: 'string' }
+            },
+            required: ['payload']
+          }
+        },
+        {
+          name: 'update_invoice',
+          description: 'Update an existing invoice (multipart/form-data)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer', description: 'Invoice ID to update' },
+              payload: { type: 'object', description: 'Fields to update' },
+              api_url: { type: 'string' },
+              api_key: { type: 'string' }
+            },
+            required: ['id', 'payload']
+          }
+        },
+        {
+          name: 'search_invoices',
+          description: 'Search invoices by keyword',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              keysearch: { type: 'string', description: 'Search term to find invoices' },
+            },
+            required: ['keysearch'],
+          },
+        },
+        {
+          name: 'delete_invoice',
+          description: 'Delete an invoice by ID',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer', description: 'Invoice unique ID to delete' },
+            },
+            required: ['id'],
+          },
+        },
         // Task tools
         {
           name: 'get_task_by_id',
@@ -278,6 +328,17 @@ class PerfexCRMServer {
               },
             },
             required: ['id'],
+          },
+        },
+        {
+          name: 'search_tasks',
+          description: 'Search for tasks by keyword',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              keysearch: { type: 'string', description: 'Search term to find tasks' },
+            },
+            required: ['keysearch'],
           },
         },
         // Lead tools
@@ -542,6 +603,18 @@ class PerfexCRMServer {
             required: ['id'],
           },
         },
+        // Customer maintenance
+        {
+          name: 'delete_customer',
+          description: 'Delete a customer permanently',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer', description: 'Customer unique ID to delete' },
+            },
+            required: ['id'],
+          },
+        },
         // Common data tools (implemented)
         {
           name: 'list_payment_modes',
@@ -550,6 +623,19 @@ class PerfexCRMServer {
             type: 'object',
             properties: {},
           },
+        },
+        {
+          name: 'create_payment',
+          description: 'Create a payment (multipart/form-data)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              payload: { type: 'object', description: 'Payment fields, e.g., amount, invoiceid, date, paymentmode, etc.' },
+              api_url: { type: 'string' },
+              api_key: { type: 'string' }
+            },
+            required: ['payload']
+          }
         },
         {
           name: 'list_expense_categories',
@@ -592,10 +678,20 @@ class PerfexCRMServer {
             return await this.handleListInvoices();
           case 'get_invoice_by_id':
             return await this.handleGetInvoiceById(args);
+          case 'create_invoice':
+            return await this.handleCreateInvoice(args);
+          case 'update_invoice':
+            return await this.handleUpdateInvoice(args);
+          case 'search_invoices':
+            return await this.handleSearchInvoices(args);
+          case 'delete_invoice':
+            return await this.handleDeleteInvoice(args);
           
           // Task handlers
           case 'get_task_by_id':
             return await this.handleGetTaskById(args);
+          case 'search_tasks':
+            return await this.handleSearchTasks(args);
           
           // Lead handlers
           case 'list_leads':
@@ -628,10 +724,14 @@ class PerfexCRMServer {
           // Common data handlers
           case 'list_payment_modes':
             return await this.handleListPaymentModes();
+          case 'create_payment':
+            return await this.handleCreatePayment(args);
           case 'list_expense_categories':
             return await this.handleListExpenseCategories();
           case 'list_taxes':
             return await this.handleListTaxes();
+          case 'delete_customer':
+            return await this.handleDeleteCustomer(args);
           
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
@@ -808,6 +908,78 @@ class PerfexCRMServer {
     }
   }
 
+  private async handleCreateInvoice(args: any) {
+    const { api_url, api_key, payload } = args || {};
+    const validation = z.object({ payload: z.record(z.any()) }).safeParse({ payload });
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'payload must be an object');
+    }
+    const client = this.getApiClientFromArgs({ api_url, api_key });
+    try {
+      const form = new (require('form-data'))();
+      Object.entries(validation.data.payload).forEach(([k, v]) => {
+        form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+      });
+      const response = await client.post('/invoices', form, { headers: form.getHeaders() });
+      return this.handleGenericApiResponse(response.data, 'create invoice');
+    } catch (error) {
+      this.handleApiError(error, 'create invoice');
+      throw error;
+    }
+  }
+
+  private async handleUpdateInvoice(args: any) {
+    const { api_url, api_key, id, payload } = args || {};
+    const validation = z.object({ id: z.union([z.number(), z.string()]), payload: z.record(z.any()) }).safeParse({ id, payload });
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'id and payload are required');
+    }
+    const client = this.getApiClientFromArgs({ api_url, api_key });
+    try {
+      const form = new (require('form-data'))();
+      Object.entries(validation.data.payload).forEach(([k, v]) => {
+        form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+      });
+      const response = await client.put(`/invoices/${validation.data.id}`, form, { headers: form.getHeaders() });
+      return this.handleGenericApiResponse(response.data, `update invoice ${validation.data.id}`);
+    } catch (error) {
+      this.handleApiError(error, `update invoice ${validation.data.id}`);
+      throw error;
+    }
+  }
+
+  private async handleSearchInvoices(args: any) {
+    const validation = z.object({ keysearch: z.string() }).safeParse(args);
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'keysearch must be a string');
+    }
+    try {
+      const response = await apiClient.get(`/invoices/search/${encodeURIComponent(validation.data.keysearch)}`);
+      const data = response.data;
+      if (!Array.isArray(data)) {
+        throw new McpError(ErrorCode.InternalError, 'Invalid API response format for searchInvoices. Expected array.');
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    } catch (error) {
+      this.handleApiError(error, `search invoices for "${validation.data.keysearch}"`);
+      throw error;
+    }
+  }
+
+  private async handleDeleteInvoice(args: any) {
+    const validation = z.object({ id: z.union([z.number(), z.string()]) }).safeParse(args);
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'id must be provided');
+    }
+    try {
+      const response = await apiClient.delete(`/invoices/${validation.data.id}`);
+      return this.handleGenericApiResponse(response.data, `delete invoice ${validation.data.id}`);
+    } catch (error) {
+      this.handleApiError(error, `delete invoice ${validation.data.id}`);
+      throw error;
+    }
+  }
+
   // Task handlers
   private async handleGetTaskById(args: any) {
     const validation = z.object({ id: z.union([z.number(), z.string()]) }).safeParse(args);
@@ -833,6 +1005,24 @@ class PerfexCRMServer {
       };
     } catch (error) {
       this.handleApiError(error, `get task ${validation.data.id}`);
+      throw error;
+    }
+  }
+
+  private async handleSearchTasks(args: any) {
+    const validation = z.object({ keysearch: z.string() }).safeParse(args);
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'keysearch must be a string');
+    }
+    try {
+      const response = await apiClient.get(`/tasks/search/${encodeURIComponent(validation.data.keysearch)}`);
+      const data = response.data;
+      if (!Array.isArray(data)) {
+        throw new McpError(ErrorCode.InternalError, 'Invalid API response format for searchTasks. Expected array.');
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    } catch (error) {
+      this.handleApiError(error, `search tasks for "${validation.data.keysearch}"`);
       throw error;
     }
   }
@@ -1134,6 +1324,20 @@ class PerfexCRMServer {
     }
   }
 
+  private async handleDeleteCustomer(args: any) {
+    const validation = z.object({ id: z.union([z.number(), z.string()]) }).safeParse(args);
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'id must be provided');
+    }
+    try {
+      const response = await apiClient.delete(`/delete/customers/${validation.data.id}`);
+      return this.handleGenericApiResponse(response.data, `delete customer ${validation.data.id}`);
+    } catch (error) {
+      this.handleApiError(error, `delete customer ${validation.data.id}`);
+      throw error;
+    }
+  }
+
   // Common data handlers
   private async handleListPaymentModes() {
     try {
@@ -1154,6 +1358,26 @@ class PerfexCRMServer {
       };
     } catch (error) {
       this.handleApiError(error, 'list payment modes');
+      throw error;
+    }
+  }
+
+  private async handleCreatePayment(args: any) {
+    const { api_url, api_key, payload } = args || {};
+    const validation = z.object({ payload: z.record(z.any()) }).safeParse({ payload });
+    if (!validation.success) {
+      throw new McpError(ErrorCode.InvalidParams, 'payload must be an object');
+    }
+    const client = this.getApiClientFromArgs({ api_url, api_key });
+    try {
+      const form = new (require('form-data'))();
+      Object.entries(validation.data.payload).forEach(([k, v]) => {
+        form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+      });
+      const response = await client.post('/payments', form, { headers: form.getHeaders() });
+      return this.handleGenericApiResponse(response.data, 'create payment');
+    } catch (error) {
+      this.handleApiError(error, 'create payment');
       throw error;
     }
   }
